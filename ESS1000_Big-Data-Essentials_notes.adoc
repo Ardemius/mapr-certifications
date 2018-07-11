@@ -1,0 +1,493 @@
+= MapR Essentials ESS 1000 – Big Data Essentials
+Thomas SCHWENDER <https://github.com/ardemius[@ardemius]>
+// Handling GitHub admonition blocks icons
+ifndef::env-github[:icons: font]
+ifdef::env-github[]
+:status:
+:outfilesuffix: .adoc
+:caution-caption: :fire:
+:important-caption: :exclamation:
+:note-caption: :paperclip:
+:tip-caption: :bulb:
+:warning-caption: :warning:
+endif::[]
+:imagesdir: images
+:source-highlighter: highlightjs
+// Next 2 ones are to handle line breaks in some particular elements (list, footnotes, etc.)
+:lb: pass:[<br> +]
+:sb: pass:[<br>]
+// check https://github.com/Ardemius/personal-wiki/wiki/AsciiDoctor-tips for tips on table of content in GitHub
+:toc: macro
+//:toclevels: 3
+// To turn off figure caption labels and numbers
+//:figure-caption!:
+// Same for examples
+//:example-caption!:
+// To turn off ALL captions
+:caption:
+
+toc::[]
+
+Contains courses:
+
+* *ESS 100* – Introduction to Big Data
+* *ESS 101* – Apache Hadoop Essentials
+* *ESS 102* – MapR Converged Data Platform Essentials
+
+== ESS 100 - Introduction to Big Data
+
+=== Lesson 1 - introduction to Big Data
+
+3 V’s of Big Data:
+
+* *Volume*: store
+* *Variety*: describe
+* *Velocity*: process
+
+*Big Table* main components: row key / column key / timestamp. +
+Big Table rows are then partitioned into subtables called *tablets*, which are distributed across the cluster.
+
+*Doug Cutting* used Google Big Data publications to begin developing a project at Yahoo!, that was later open sourced as *Apache Hadoop*.
+
+NOTE: Funny info: "Hadoop" was the name of Mr. Cutting's son's toy elephant 😉
+
+.Differences of components between *Google Big Table / Apache Hadoop / MapR Converged Data Platform*
+image::ESS1000_01.png[]
+
+When speaking of "Big Data", *volumetry* starts at the very least with *Terabytes* (10^12 bytes). +
+-> That’s the level where big data problems typically *start to emerge*.
+BUT, in real use cases, it’s more frequently *Petabyte* (10^15) or *Exabyte* (10^18)
+
+WARNING: Velocity or variety means you may have a big data problem without these large volumes (even starting from Mo)
+
+* *Physical storage* refers to the actual real-world location of your data. +
+-> This might be several racks of servers in a data warehouse.
+* *Logical storage* refers to how your operating system organizes your data. +
+-> This includes the topology of your file system, and how data is partitioned across nodes.
+
+Vocabulary:
+
+* *UDF*: User-Defined Function
+* *ETL*: Extract Transform and Load - a process for getting data ready for analysis (I like this short definition)
+
+=== Lesson 2 - the Big Data pipeline
+
+*Basic data pipeline*: Data from your sources must be *ingested*, *processed*, *stored*, and *analyzed*.
+
+image::ESS1000_02.png[]
+
+One data were collected, it must be processed -> this *processing step* is often referred as ETL.
+
+The "Transform" can include:
+
+* *normalization*
+* *cleaning*
+* *sampling*: such as such as splitting data into test and training groups for *machine learning*
+* *splitting*
+
+*Developers* (what some call "*Data engineer*") write programs that help with the ETL process. They are responsible for:
+
+* *Data ingestion*
+* *Data processing*
+
+*Data analysts* responsible for *analyzing data* (final step of the Big Data pipeline). +
+This includes:
+
+* data mining
+* extraction
+* normalization
+* filtering
+* aggregation
+* querying
+* interpreting
+* graphing
+* and making predictions
+
+They provide companies with *business intelligence*, as well as use *visualization tools* (Tableau) to make infographics and presentations that summarize their findings. +
+Example of work of a Data Analyst:
+
+* correlate several variables, like the release of a new product with social media sentiment.
+* use historical data to predict future trends
+
+== ESS 101 - Apache Hadoop Essentials
+
+=== Lesson 3 - Core Elements of Apache Hadoop
+
+*Local file systems*:
+
+* *inode*: stores metadata (file type, permissions, owner, time it was last modified, etc.) and pointers to the data blocks the file is stored in
+* *data blocks*: store the actual content of the file
+
+.Reminder
+NOTE: *RAID* = Redundant Array of Inexpensive Disks
+
+* *Node* = collection of disks
+* *Cluster* = collection of nodes
+
+//-
+
+*Mirroring* (or *shadowing*) is the process of creating multiple *copies of databases* (the whole thing).
+*Replication* is the process of creating distributing redundant data and database *objects* at different databases to enhance the availability of the data.
+
+==== MapReduce algorithm
+
+*MapReduce algorithm* is composed of the following steps:
+
+* *map*: a map function is applied to each of these splits to produce key-value pairs
+* *shuffle*:  the framework sorts all the key/value pairs from the mappers and *partitions them among the reducers*
+* *reduce*: a reduce function is applied to each of these partitions
+
+image::ESS1000_03.png[]
+
+*Example of MapReduce algorithm*: 
+
+ifdef::env-github[]
+https://www.youtube.com/watch?v=A_8d55ZfWo8[Sort Playing Cards with MapReduce]
+endif::[]
+ifdef::env-browser[]
+video::A_8d55ZfWo8[youtube, width=640, height=480]
+endif::[]
+
+10 decks of 52 cards each, so 520 cards 
+
+=== Lesson 4: The Apache Hadoop Ecosystem
+
+The Hadoop ecosystem (some components):
+
+* *Administration*: Apache ZooKeeper, YARN
+* *Ingestion*: Apache Flume, Apache Oozie, Apache Sqoop
+* *Processing*: Apache Spark, Apache HBase, Apache Pig
+* *Analysis*: Apache Hive, Apache Drill, Apache Mahout
+
+==== Administration: Apache ZooKeeper
+
+*Apache ZooKeeper* is a centralized service that maintains:
+
+* configuration information
+* naming
+* distributed synchronization
+* heartbeats 
+* and group services for all of the servers. 
+
+Hadoop uses ZooKeeper to coordinate between services running across multiple nodes.
+
+==== Administration: Yarn
+
+*YARN* (Yet Another *Resource Negociator*) allows other applications to run on a Hadoop cluster
+
+==== Ingestion: Apache Flume
+
+*Apache Flume* is a reliable, scalable, open source service tool for *ingesting streaming data* into a Hadoop cluster. +
+Flume is commonly used to stream events from an external source, such as syslog logs, *web server logs*, or *social media feeds*. It then delivers this data to a Hadoop cluster.
+
+==== Ingestion: Apache Sqoop
+
+*Apache Sqoop* is a utility that transfers data between an external data store (RDBMS and NoSQL) and a Hadoop cluster (in Hive tables or HBase).
+Sqoop calls map-only MapReduce jobs to import and/or export data between the Hadoop cluster and the external data store.
+
+==== Ingestion: Apache Oozie
+
+*Apache Oozie* is a scalable and extensible *scheduling system* for creating Hadoop workflows. +  
+Oozie can be used to manage multiple types of jobs within a workflow, including MapReduce, Pig, Hive, and Sqoop, as well as arbitrary scripts and Java programs.
+
+==== Processing: Apache Spark
+
+*Apache Spark* is a framework for *performing general data analytics* on a distributed computing cluster like Hadoop. 
+Spark caches data sets to provide *in-memory computation*. 
+These in-memory, *iterative jobs* mean faster processing than MapReduce for complex analyses like machine learning. 
+Spark can also process structured data from Hive, Flume, or your own custom data sources, through Spark Streaming or Spark SQL.
+
+==== Processing: Apache HBase
+
+*Apache HBase* is an *open-source*, *distributed*, *versioned*, *NoSQL database* modeled after Google's Bigtable.
+
+HBase is designed to handle enormous amounts of inconsistent data, and is especially suited for:
+
+* Capturing millions or even *billions* of rows and columns worth of data from something like systems metrics or user clicks
+* Storing sparse data such as chats or emails that has *inconsistent values* across columns
+* Continuously captured data, where random read/write access is needed, such as a web application back-end or search index
+
+==== Processing: Apache Pig
+
+*Apache Pig* is a platform for analyzing data. +
+Pig consists of:
+
+* a *data flow scripting language* called *"Pig Latin"*
+* an *infrastructure for converting these scripts into a sequence of MapReduce programs*. 
+
+By using MapReduce, Pig Latin scripts can be used with a Hadoop platform to perform transformations on very large and/or complex data sets.
+
+==== Analysis: Apache Hive
+
+*Apache Hive* is a *data warehouse infrastructure* built on top of Hadoop.
+
+Hive stores data in tables using *HCatalog* and tracks this data using the *Hive Metastore*. +
+Hive uses a *SQL-like* query language called *HiveQL*. 
+HiveQL provides a way for analysts already familiar with SQL to easily *create MapReduce programs*, and to execute queries on data stored on Hadoop.
+
+==== Analysis: Apache Drill
+
+*Apache Drill* is a *query engine* for *big data exploration*. 
+
+Drill can perform dynamic queries on *structured*, *semi-structured*, and *unstructured* data on HDFS or Hive tables using *ANSI-SQL*. +
+Drill is very flexible, and *can query a variety of data from multiple data sources*. +
+-> This makes it an excellent tool for exploring unknown data. 
+Unlike Hive, Drill does not use MapReduce and is ANSI-SQL compliant, making it faster and easier to use.
+
+==== Analysis: Apache Mahout
+
+*Apache Mahout* is a suite of scalable *machine learning libraries*. 
+
+It supports *clustering*, *classification*, and *collaborative filtering*. +
+These machine learning algorithms can use large amounts of data to make predictions, such as the *recommendations* made by Netflix or Amazon. 
+
+Mahout also has low-level matrix math libraries for those who do want to write their own algorithms. +
+Mahout has traditionally been run using MapReduce, but support for Spark has been added to Mahout. 
+
+=== Lesson 5: Solving Big Data Problems with Apache Hadoop
+
+==== Machine Learning algorithms
+
+* *classification*: supervised machine learning that takes a set of known classes and learns how to classify new records based on that information
+
+image::ESS1000_04.png[]
+
+* *clustering*: unsupervised machine learning that groups similar objects
+* *collaborative filtering*: compares preference data from different users to create a recommendation model
+
+==== Supervised algorithms
+
+Because classification works with a pre-defined set of outputs, it is considered a *supervised* machine learning algorithm. The data scientist decides the classes *in advance*.
+
+-> Dans le cas de la classification, tu connais déjà ce que tu dois obtenir. L’algo n’est pas commencé que l’on connaît déjà les catégorie qui vont être obtenues.
+
+==== Unsupervised algorithms
+
+Clustering uses *unsupervised* algorithms, which *do not have the outputs in advance*. 
+No known classes are used as a reference, as with a supervised algorithm like classification.
+
+== ESS 102 - MapR Converged Data Platform Essentials
+
+=== Lesson 6 - Introduction to the MapR Converged Data Platform
+
+The *Hadoop strategy* is to:
+
+. Distribute data 
+. Distribute computation 
+. Tolerate faults
+
+*MapR Converged Data Platform*:
+
+* *MapR-XD*: *POSIX-compliant* file storage, designed to store hexabytes of data, compatible with HDFS, MapR Analytics.
+Can handle much more volume of Data than HDFS
+
+
+* *MapR-DB*: Database technology (NoSQL Database)
+supports HBase binary database model, and JSON documents through OJAI (Open JSON Application Interface: allows CRUD operations on structured, semi-structured and unstructured data)
+
+image::ESS1000_05.png[]
+
+* *MapR-ES*: Global publish / subscribe, real time event streaming, MapR Analytics.
+Designed to support IoT constraints
+
+image::ESS1000_06.png[]
+
+MEP: *MapR Extension Pack*
+
+image::ESS1000_07.png[]
+
+*CLDB* = Container Location Databases
+
+image:ESS1000_08.png[]
+image:ESS1000_09.png[]
+image:ESS1000_10.png[]
+image:ESS1000_11.png[]
+
+*Myriad* is a project that married Mesos and Yarn together, to provide true multi-tenancy across Hadoop and non Hadoop solution.
+
+image:ESS1000_12.png[]
+image:ESS1000_13.png[]
+
+==== Resources
+
+ifdef::env-github[]
+* YouTube: https://www.youtube.com/watch?v=TOFQq9PHJHk[MapR-FS storage architecture]
+endif::[]
+ifdef::env-browser[]
+MapR-FS storage architecture
+
+video::TOFQq9PHJHk[youtube, width=640, height=480]
+endif::[]
+
+ifdef::env-github[]
+* YouTube: https://www.youtube.com/watch?v=xUihiT9RODk[Key architecture features of MapR-FS, in contrast with HDFS]
+endif::[]
+ifdef::env-browser[]
+Key architecture features of MapR-FS, in contrast with HDFS
+
+video::xUihiT9RODk[youtube, width=640, height=480]
+endif::[]
+
+ifdef::env-github[]
+* YouTube: https://www.youtube.com/watch?v=TiqA9ybgewk[Container Location Databases (CLDB) vs HDFS NameNode]
+endif::[]
+ifdef::env-browser[]
+Container Location Databases (CLDB) vs HDFS NameNode
+
+video::TiqA9ybgewk[youtube, width=640, height=480]
+endif::[]
+
+ifdef::env-github[]
+* YouTube: https://www.youtube.com/watch?v=KS2cB54OiUg[MapR CTO’s perspective on the Converged Data Platform] (excellent high level view on MapR CDP)
+endif::[]
+ifdef::env-browser[]
+MapR CTO’s perspective on the Converged Data Platform (excellent high level view on MapR CDP)
+
+video::KS2cB54OiUg[youtube, width=640, height=480]
+endif::[]
+
+=== Lesson 7 - MapR-DB
+
+RDBMS vs *Apache HBase*:
+
+image::ESS1000_14.png[]
+
+*HBase specific features*:
+
+image::ESS1000_15.png[]
+
+* *compaction*: HBase re-write multiple files into fewer larger files.
+It allows faster reads, but requires more computational resources to merge files.
+HBase cluster can also be inaccessible during major compactions
+* *Region server*: 
+	** HBase Tables are divided horizontally by row key range into "Regions." A region contains all rows in the table between the region’s start key and end key. Regions are assigned to the nodes in the cluster, called "Region Servers," and these serve data for *reads* and *writes* (but not for DDL operations).
+	** When accessing data, clients communicate with HBase RegionServers directly.
+	** A Region Server runs on an HDFS data node
+* *HBase HMaster*: Region assignment, coordinating the region servers, admin functions (DDL operations: create, delete, update tables) are handled by the HBase Master.
+
+HBase has a *master / slave* architecture.
+
+image::ESS1000_16.png[]
+
+NOTE: An excellent article on the *inner working of HBase* (by MapR !): +
+https://mapr.com/blog/in-depth-look-hbase-architecture/
+
+*MapR-DB vs HBase*
+
+image::ESS1000_17.png[]
+
+Performances of MapR-DB compared to HDFS and HBase:
+
+image::ESS1000_18.png[]
+
+On the graph, HDFS is about 500 Mo/sec, whereas *MapR-FS* has a *world record* (end 2015) sending 16 Go/sec.
+
+[red]*OJAI* (*Open JSON Application Interface*) allows the following features for MapR-DB:
+
+* Analytics tools like Apache Drill can connect seamlessly to MapR-DB using OJAI.
+Doing so, analysts can *directly query data stored in JSON files*, without complicated ETL processes. 
+* Developers can build real-time web applications using OJAI which allow to search databases by integrating with open source search tools like Elasticsearch.
+
+image:ESS1000_19.png[]
+image:ESS1000_20.png[]
+
+In the case of the MapR Converged Data Platform, HBase is replaced by MapR-DB. +
+MapR-DB and MapR-FS are fully integrated, meaning seamless communication with *NO JVM layer*. +
+*MapR-DB is API-compatible with HBase*, so existing applications written for HBase will work with MapR-DB.
+
+image::ESS1000_21.png[]
+
+==== Resources on MapR-DB
+
+ifdef::env-github[]
+* YouTube: https://www.youtube.com/watch?v=DR32AOJwG4Q[MapR-DB and project Kudu]
+endif::[]
+ifdef::env-browser[]
+* MapR-DB and project Kudu
++
+video::DR32AOJwG4Q[youtube, width=640, height=480]
+endif::[]
+
+* project *Kudu* https://kudu.apache.org/[homepage].
++
+____
+*Kudu* provides a combination of fast inserts/updates and efficient columnar scans to enable multiple real-time analytic workloads across a single storage layer. As a new complement to HDFS and Apache HBase, Kudu gives architects the flexibility to address a wider variety of use cases without exotic workarounds.
+____
++
+____
+Like most modern analytic data stores, *Kudu internally organizes its data by column* rather than row. *Columnar storage* allows efficient encoding and compression. For example, a string field with only a few unique values can use only a few bits per row of storage. With techniques such as run-length encoding, differential encoding, and vectorized bit-packing, *Kudu is as fast at reading the data as it is space-efficient at storing it*.
+____
++
+____
+*Columnar storage* also dramatically *reduces the amount of data IO required to service analytic queries*. Using techniques such as lazy data materialization and https://www.quora.com/What-is-predicate-pushdown-In-mapreduce[predicate pushdown], Kudu can perform drill-down and needle-in-a-haystack queries over billions of rows and terabytes of data in seconds.
+____
+
+image::ESS1000_22.png[]
+
+=== Lesson 8 - MapR Streams
+
+.What is batch Processing?
+image::ESS1000_23.png[]
+
+*Batch* processing is great for processing *historical data*.
+
+image::ESS1000_24.png[]
+
+If your data source is *high-velocity*, like the *Internet of Things (IoT)*, or you need results in *real time*, you should use streaming.
+Many (big) data sources are *event-oriented* (like MapR Streams)
+
+*MapR Streams* is a global *publish / subscribe streaming system* for (big) Data
+
+image::ESS1000_25.png[]
+
+Building a complete *Data Architecture*
+
+image::ESS1000_26.png[]
+
+*MapR Streams* acts as a *message bus* between the components of the Data pipeline.
+
+==== Working of MapR Streams
+
+For administration purpose, MapR add another bigger pipe around topics, called a *Stream*. +
+A Stream is a "*first class entity*" within the MapR namespace (ex: `/mapr/cluster1/streamA`)
+
+image::ESS1000_27.png[]
+
+* *topics* organize events into *categories*
+* topics are *partitioned* for scalability
+* topics are *replicated* for reliability
+* consumers can subscribe to topics using *Kafka APIs*
+* all messages published to MapR Streams are *persisted*,  allowing future consumers to "catch-up" on processing, and analytics applications to *process historical data*.
+
+Example with oil rigs and sensor:
+
+image::ESS1000_28.png[]
+
+* *sensors* are the *data producers*
+* data is published to a *stream*, here called "Venezuela"
+* the stream contains *topics*, organizing data in 2 categories: "pressure" and "temperature"
+* an *Apache Spark consumer* application subscribe to the data
+* if the pressure or temperature become to high or low, an alert is issued
+
+Replication of topics
+
+image::ESS1000_29.png[]
+
+* Producers only at 1 place (no producer possible on the replicate)
+* the order of the messages is maintained.
+
+==== Resources on MapR Streams
+
+ifdef::env-github[]
+* YouTube: https://www.youtube.com/watch?v=GNoHKZeib4g[Streaming Data with MapR]
+endif::[]
+ifdef::env-browser[]
+* Streaming Data with MapR
+
+video::GNoHKZeib4g[youtube, width=640, height=480]
+endif::[]
+
+== Resources
+
+A repo storing former MapR PDF courses (now replaced by ESS courses): https://github.com/jdwittenauer/hadoop-training
+
