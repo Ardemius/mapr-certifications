@@ -449,7 +449,7 @@ image::ESS1000_26.png[]
 ==== Working of MapR Streams
 
 For administration purpose, MapR add another bigger pipe around topics, called a *Stream*. +
-A Stream is a "*first class entity*" within the MapR namespace (ex: `/mapr/cluster1/streamA`)
+A Stream is a "*first class entity*" within the MapR *Global Name Space* (ex: `/mapr/cluster1/streamA`)
 
 image::ESS1000_27.png[]
 

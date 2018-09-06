@@ -1,0 +1,185 @@
+Scanning directory '/opt/mapr/server/filters'
+
+vi ffs.log-0
+
+2018-08-17 07:44:03,4008 ERROR FuseAPI fs/client/fileclient/cc/fuse_api.cc:1381 Thread: 2565 Shmid to be used by fcdebug 98307
+2018-08-17 07:44:03,4429 ERROR Cidcache fs/client/fileclient/cc/cidcache.cc:2472 Thread: 2601 MoveToNextCldb: No CLDB entries, cannot run, sleeping 5 seconds!
+2018-08-17 07:44:08,4450 ERROR Client fs/client/fileclient/cc/client.cc:1329 Thread: 2601 Failed to initialize client for cluster demo.mapr.com, error Connection reset by peer(104)
+2018-08-17 07:44:20,7664 ERROR FuseAPI fs/client/fileclient/cc/fuse_api.cc:1381 Thread: 3051 Shmid to be used by fcdebug 294913
+2018-08-17 07:44:20,7760 ERROR Cidcache fs/client/fileclient/cc/cidcache.cc:2472 Thread: 3126 MoveToNextCldb: No CLDB entries, cannot run, sleeping 5 seconds!
+2018-08-17 07:44:25,7773 ERROR Client fs/client/fileclient/cc/client.cc:1329 Thread: 3126 Failed to initialize client for cluster demo.mapr.com, error Connection reset by peer(104)
+2018-08-17 07:44:40,0593 ERROR FuseAPI fs/client/fileclient/cc/fuse_api.cc:1381 Thread: 4425 Shmid to be used by fcdebug 622594
+2018-08-17 07:44:40,1667 ERROR Cidcache fs/client/fileclient/cc/cidcache.cc:2472 Thread: 4458 MoveToNextCldb: No CLDB entries, cannot run, sleeping 5 seconds!
+2018-08-17 07:44:45,1714 ERROR Client fs/client/fileclient/cc/client.cc:1329 Thread: 4458 Failed to initialize client for cluster demo.mapr.com, error Connection reset by peer(104)
+
+vi posix-client-container.log
+
+Fri Aug 17 07:44:01 PDT 2018: Running /opt/mapr/initscripts/mapr-posix-client-container start
+Fri Aug 17 07:44:03 PDT 2018: Mounting posix-client-container /mapr --log_path /opt/mapr/logs --client_lib_path /tmp -o allow_other -o big_writes -o auto_unmount -o async_dio -o max_background=64 -o auto_inval_data --disable_writeback at /mapr ...
+Starting fuse with 1 libraries
+Fri Aug 17 07:44:03 PDT 2018: Result:0
+Failed to load clustersFri Aug 17 07:44:09 PDT 2018: Running /opt/mapr/initscripts/mapr-posix-client-container stop
+Fri Aug 17 07:44:09 PDT 2018: posix-client-container is not mounted.
+Fri Aug 17 07:44:20 PDT 2018: Running /opt/mapr/initscripts/mapr-posix-client-container start
+Fri Aug 17 07:44:20 PDT 2018: Mounting posix-client-container /mapr --log_path /opt/mapr/logs --client_lib_path /tmp -o allow_other -o big_writes -o auto_unmount -o async_dio -o max_background=64 -o auto_inval_data --disable_writeback at /mapr ...
+Starting fuse with 1 libraries
+Fri Aug 17 07:44:20 PDT 2018: Result:0
+Failed to load clustersFri Aug 17 07:44:26 PDT 2018: Running /opt/mapr/initscripts/mapr-posix-client-container stop
+Fri Aug 17 07:44:26 PDT 2018: posix-client-container is not mounted.
+Fri Aug 17 07:44:36 PDT 2018: Running /opt/mapr/initscripts/mapr-posix-client-container start
+Fri Aug 17 07:44:39 PDT 2018: Mounting posix-client-container /mapr --log_path /opt/mapr/logs --client_lib_path /tmp -o allow_other -o big_writes -o auto_unmount -o async_dio -o max_background=64 -o auto_inval_data --disable_writeback at /mapr ...
+Starting fuse with 1 libraries
+Fri Aug 17 07:44:39 PDT 2018: Result:0
+Failed to load clustersFri Aug 17 07:44:46 PDT 2018: Running /opt/mapr/initscripts/mapr-posix-client-container stop
+Fri Aug 17 07:44:46 PDT 2018: posix-client-container is not mounted.
+
+vi mount_local_fs.log
+
+Fri Aug 17 07:45:09 2018 [INFO] **** Started /opt/mapr/bin/mount_local_fs.pl 6.0.1.20180404222005.GA ****
+Fri Aug 17 07:45:09 2018 [INFO]   ARGS =
+Fri Aug 17 07:45:14 2018 [INFO] Attempting to mount directories: attempt #: 0
+Fri Aug 17 07:45:15 2018 [ERROR] Checking if NFS server is running failed: ret=3, o/p: nfsserver is stopped
+Fri Aug 17 07:45:15 2018 [INFO] NFS Server not running
+Fri Aug 17 07:45:23 2018 [INFO] **** Started /opt/mapr/bin/mount_local_fs.pl 6.0.1.20180404222005.GA ****
+Fri Aug 17 07:45:23 2018 [INFO]   ARGS =
+Fri Aug 17 07:45:28 2018 [INFO] Attempting to mount directories: attempt #: 0
+Fri Aug 17 07:45:30 2018 [ERROR] Checking if NFS server is running failed: ret=3, o/p: nfsserver is stopped
+Fri Aug 17 07:45:30 2018 [INFO] NFS Server not running
+Fri Aug 17 07:45:38 2018 [INFO] **** Started /opt/mapr/bin/mount_local_fs.pl 6.0.1.20180404222005.GA ****
+Fri Aug 17 07:45:38 2018 [INFO]   ARGS =
+Fri Aug 17 07:45:43 2018 [INFO] Attempting to mount directories: attempt #: 0
+Fri Aug 17 07:45:44 2018 [ERROR] Checking if NFS server is running failed: ret=3, o/p: nfsserver is stopped
+Fri Aug 17 07:45:44 2018 [INFO] NFS Server not running
+Fri Aug 17 08:16:27 2018 [INFO] **** Started /opt/mapr/bin/mount_local_fs.pl 6.0.1.20180404222005.GA ****
+Fri Aug 17 08:16:27 2018 [INFO]   ARGS =
+Fri Aug 17 08:16:32 2018 [INFO] Attempting to mount directories: attempt #: 0
+Fri Aug 17 08:16:32 2018 [ERROR] Checking if NFS server is running failed: ret=3, o/p: nfsserver is stopped
+Fri Aug 17 08:16:32 2018 [INFO] NFS Server not running
+Fri Aug 17 08:16:37 2018 [INFO] **** Started /opt/mapr/bin/mount_local_fs.pl 6.0.1.20180404222005.GA ****
+Fri Aug 17 08:16:37 2018 [INFO]   ARGS =
+Fri Aug 17 08:16:42 2018 [INFO] Attempting to mount directories: attempt #: 0
+Fri Aug 17 08:16:42 2018 [ERROR] Checking if NFS server is running failed: ret=3, o/p: nfsserver is stopped
+Fri Aug 17 08:16:42 2018 [INFO] NFS Server not running
+Fri Aug 17 08:16:47 2018 [INFO] **** Started /opt/mapr/bin/mount_local_fs.pl 6.0.1.20180404222005.GA ****
+Fri Aug 17 08:16:47 2018 [INFO]   ARGS =
+Fri Aug 17 08:16:52 2018 [INFO] Attempting to mount directories: attempt #: 0
+Fri Aug 17 08:16:52 2018 [ERROR] Checking if NFS server is running failed: ret=3, o/p: nfsserver is stopped
+Fri Aug 17 08:16:52 2018 [INFO] NFS Server not running
+
+
+
+
+vi createNMVolume.2000.log
+
+2018-08-17 07:46:40 INFO This script was called with the arguments: maprdemo /var/mapr/local/maprdemo/mapred /var/mapr/local/maprdemo/mapred/nodeManager yarn
+2018-08-17 07:46:40 INFO Checking if MapRFS is online
+2018-08-17 07:46:40 DEBUG Will launch command "hadoop fs -stat /" with a command attempt timeout of 60 seconds a maximum of 1000 attempts and a sleep time of 1 seconds between failed command attempts
+2018-08-17 07:46:40 DEBUG Launching "hadoop fs -stat /"
+2018-08-17 07:46:46 DEBUG Command attempt 1 completed successfully in 6 seconds
+2018-08-17 07:46:46 DEBUG Command completed successfully after 1 attempts and after 6 seconds
+2018-08-17 07:46:46 DEBUG Will launch command "hadoop fs -stat /var/mapr/local/maprdemo" with a command attempt timeout of 60 seconds a maximum of 1000 attempts and a sleep time of 1 seconds between failed command attempts
+2018-08-17 07:46:46 DEBUG Launching "hadoop fs -stat /var/mapr/local/maprdemo"
+2018-08-17 07:46:51 DEBUG Command attempt 1 completed successfully in 5 seconds
+2018-08-17 07:46:51 DEBUG Command completed successfully after 1 attempts and after 5 seconds
+2018-08-17 07:46:51 INFO MapRFS is online. Checking whether MFS on this node is online
+2018-08-17 07:46:51 DEBUG Will launch command "/opt/mapr/server/mrconfig -p 5660 info fsstate" with a command attempt timeout of 60 seconds a maximum of 60 attempts and a sleep time of 3 seconds between failed command attempts
+2018-08-17 07:46:51 DEBUG Launching "/opt/mapr/server/mrconfig -p 5660 info fsstate"
+2018-08-17 07:46:52 DEBUG Command attempt 1 completed successfully in 1 seconds
+2018-08-17 07:46:53 DEBUG Command completed successfully after 1 attempts and after 1 seconds
+2018-08-17 07:46:53 INFO MFS on this node is online
+2018-08-17 07:46:53 INFO Checking for a volume already mounted at the specified mount path
+2018-08-17 07:46:53 DEBUG Will launch command "maprcli volume list -filter [p==/var/mapr/local/maprdemo/mapred]and[mt==1] -columns volumename,mounted,mountdir" with a command attempt timeout of 60 seconds a maximum of 1 attempts and a sleep time of 1 seconds between failed command attempts
+2018-08-17 07:46:53 DEBUG Launching "maprcli volume list -filter [p==/var/mapr/local/maprdemo/mapred]and[mt==1] -columns volumename,mounted,mountdir"
+2018-08-17 07:47:01 DEBUG Command attempt 1 completed successfully in 8 seconds
+2018-08-17 07:47:01 DEBUG Command completed successfully after 1 attempts and after 8 seconds
+2018-08-17 07:47:01 INFO The mount path is not currently being used as the primary mount path of any existing volume
+2018-08-17 07:47:01 INFO Checking for a pre-existing NodeManager volume
+2018-08-17 07:47:01 DEBUG Will launch command "maprcli volume info -name mapr.maprdemo.local.mapred -json" with a command attempt timeout of 60 seconds a maximum of 1 attempts and a sleep time of 1 seconds between failed command attempts
+2018-08-17 07:47:01 DEBUG Launching "maprcli volume info -name mapr.maprdemo.local.mapred -json"
+2018-08-17 07:47:09 DEBUG Command attempt 1 completed successfully in 8 seconds
+2018-08-17 07:47:09 DEBUG Command completed successfully after 1 attempts and after 8 seconds
+2018-08-17 07:47:09 INFO NodeManager volume already exists, checking on the volume status
+2018-08-17 07:47:09 INFO TaskTracker volume already exists, checking if the volume can be re-used
+2018-08-17 07:47:09 DEBUG Will launch command "/opt/mapr/server/mrconfig -p 5660 volume checkrepaired 14068002 2055" with a command attempt timeout of 60 seconds a maximum of 1 attempts and a sleep time of 1 seconds between failed command attempts
+2018-08-17 07:47:09 DEBUG Launching "/opt/mapr/server/mrconfig -p 5660 volume checkrepaired 14068002 2055"
+2018-08-17 07:47:11 DEBUG Command attempt 1 completed successfully in 2 seconds
+2018-08-17 07:47:11 DEBUG Command completed successfully after 1 attempts and after 2 seconds
+2018-08-17 07:47:11 INFO Pre-existing volume is healthy and mounted at the correct path
+2018-08-17 07:47:11 INFO Checking for pre-existing content in the NodeManager volume
+2018-08-17 07:47:11 DEBUG Will launch command "hadoop fs -stat /var/mapr/local/maprdemo/mapred/nodeManager" with a command attempt timeout of 60 seconds a maximum of 1 attempts and a sleep time of 1 seconds between failed command attempts
+2018-08-17 07:47:11 DEBUG Launching "hadoop fs -stat /var/mapr/local/maprdemo/mapred/nodeManager"
+2018-08-17 07:47:16 DEBUG Command attempt 1 completed successfully in 5 seconds
+2018-08-17 07:47:16 DEBUG Command completed successfully after 1 attempts and after 5 seconds
+2018-08-17 07:47:16 INFO Verifying directories in the pre-existing NodeManager volume
+2018-08-17 07:47:16 DEBUG Will launch command "hadoop fs -rmr /var/mapr/local/maprdemo/mapred/nodeManager/fidservers" with a command attempt timeout of 60 seconds a maximum of 1 attempts and a sleep time of 1 seconds between failed command attempts
+2018-08-17 07:47:16 DEBUG Launching "hadoop fs -rmr /var/mapr/local/maprdemo/mapred/nodeManager/fidservers"
+2018-08-17 07:47:20 DEBUG Command attempt 1 completed successfully in 4 seconds
+2018-08-17 07:47:20 DEBUG Command completed successfully after 1 attempts and after 4 seconds
+2018-08-17 07:47:20 DEBUG Will launch command "hadoop mfs -setcompression on /var/mapr/local/maprdemo/mapred/nodeManager" with a command attempt timeout of 60 seconds a maximum of 3 attempts and a sleep time of 1 seconds between failed command attempts
+2018-08-17 07:47:20 DEBUG Launching "hadoop mfs -setcompression on /var/mapr/local/maprdemo/mapred/nodeManager"
+2018-08-17 07:47:23 DEBUG Command attempt 1 completed successfully in 3 seconds
+2018-08-17 07:47:23 DEBUG Command completed successfully after 1 attempts and after 3 seconds
+2018-08-17 07:47:23 DEBUG Will launch command "hadoop fs -stat /var/mapr/local/maprdemo/mapred/nodeManager/spill" with a command attempt timeout of 60 seconds a maximum of 1 attempts and a sleep time of 1 seconds between failed command attempts
+2018-08-17 07:47:23 DEBUG Launching "hadoop fs -stat /var/mapr/local/maprdemo/mapred/nodeManager/spill"
+2018-08-17 07:47:26 DEBUG Command attempt 1 completed successfully in 3 seconds
+2018-08-17 07:47:26 DEBUG Command completed successfully after 1 attempts and after 3 seconds
+2018-08-17 07:47:26 DEBUG Will launch command "hadoop fs -stat /var/mapr/local/maprdemo/mapred/nodeManager/output" with a command attempt timeout of 60 seconds a maximum of 1 attempts and a sleep time of 1 seconds between failed command attempts
+2018-08-17 07:47:26 DEBUG Launching "hadoop fs -stat /var/mapr/local/maprdemo/mapred/nodeManager/output"
+2018-08-17 07:47:29 DEBUG Command attempt 1 completed successfully in 3 seconds
+2018-08-17 07:47:29 DEBUG Command completed successfully after 1 attempts and after 3 seconds
+2018-08-17 07:47:29 DEBUG Will launch command "hadoop fs -stat /var/mapr/local/maprdemo/mapred/nodeManager/spill.U" with a command attempt timeout of 60 seconds a maximum of 1 attempts and a sleep time of 1 seconds between failed command attempts
+2018-08-17 07:47:29 DEBUG Launching "hadoop fs -stat /var/mapr/local/maprdemo/mapred/nodeManager/spill.U"
+2018-08-17 07:47:33 DEBUG Command attempt 1 completed successfully in 4 seconds
+2018-08-17 07:47:33 DEBUG Command completed successfully after 1 attempts and after 4 seconds
+2018-08-17 07:47:33 DEBUG Will launch command "hadoop fs -stat /var/mapr/local/maprdemo/mapred/nodeManager/output.U" with a command attempt timeout of 60 seconds a maximum of 1 attempts and a sleep time of 1 seconds between failed command attempts
+2018-08-17 07:47:33 DEBUG Launching "hadoop fs -stat /var/mapr/local/maprdemo/mapred/nodeManager/output.U"
+2018-08-17 07:47:36 DEBUG Command attempt 1 completed successfully in 3 seconds
+2018-08-17 07:47:36 DEBUG Command completed successfully after 1 attempts and after 3 seconds
+2018-08-17 07:47:36 DEBUG Will launch command "hadoop mfs -setcompression off /var/mapr/local/maprdemo/mapred/nodeManager/spill.U" with a command attempt timeout of 60 seconds a maximum of 3 attempts and a sleep time of 1 seconds between failed command attempts
+2018-08-17 07:47:36 DEBUG Launching "hadoop mfs -setcompression off /var/mapr/local/maprdemo/mapred/nodeManager/spill.U"
+2018-08-17 07:47:39 DEBUG Command attempt 1 completed successfully in 3 seconds
+2018-08-17 07:47:39 DEBUG Command completed successfully after 1 attempts and after 3 seconds
+2018-08-17 07:47:39 DEBUG Will launch command "hadoop mfs -setcompression off /var/mapr/local/maprdemo/mapred/nodeManager/output.U" with a command attempt timeout of 60 seconds a maximum of 3 attempts and a sleep time of 1 seconds between failed command attempts
+2018-08-17 07:47:39 DEBUG Launching "hadoop mfs -setcompression off /var/mapr/local/maprdemo/mapred/nodeManager/output.U"
+2018-08-17 07:47:42 DEBUG Command attempt 1 completed successfully in 3 seconds
+2018-08-17 07:47:42 DEBUG Command completed successfully after 1 attempts and after 3 seconds
+2018-08-17 07:47:42 INFO The NodeManager local volume has been setup successfully.
+
+
+vi mount_local_fs.log
+
+Fri Aug 17 08:16:27 2018 [INFO] **** Started /opt/mapr/bin/mount_local_fs.pl 6.0.1.20180404222005.GA ****
+Fri Aug 17 08:16:27 2018 [INFO]   ARGS =
+Fri Aug 17 08:16:32 2018 [INFO] Attempting to mount directories: attempt #: 0
+Fri Aug 17 08:16:32 2018 [ERROR] Checking if NFS server is running failed: ret=3, o/p: nfsserver is stopped
+Fri Aug 17 08:16:32 2018 [INFO] NFS Server not running
+
+2018-08-17 07:44:38,5565 INFO Global instancemfs.cc:316 Security is not enabled for cluster demo.mapr.com
+
+
+vi mfsinit.log
+
+Disabling disk cache and set max io size on mapr disks
+/opt/mapr/server/maprexecute Disabling the disk cache on mapr disk: /dev/sdb
+
+/dev/sdb:
+ setting drive write-caching to 0 (off)
+ write-caching =  1 (on)
+Disabling the disk cache on mapr disk: /dev/sdb: Successful
+Setting max_sectors_kb for mapr disk: sdb
+Error: Set max_sectors_kb to 1024 failed on mapr disk: sdb
+Fri Aug 17 07:44:36 PDT 2018: ------- mfs  with pid 3601 ----------
+2018-08-17 07:44:36,8285 ***** Starting mfs server, with pid 4153
+Command line: /opt/mapr/server/mfs -b -p 5660 -c 2 -Y8192 -n inode:10:meta:10:dir:40:small:15:db:0:valc:0 -V -m 1173 -O /opt/mapr/conf/mapr-clusters.conf -i 16384
+
+ b  p  c  Y  n  V  m  O  i 2018-08-17 07:44:36,8286 mapr-mfs passed parameter = 22018-08-17 07:44:36,8286 ifile /opt/mapr/conf/mfsinstances_1
+2018-08-17 07:44:36,8287 number of Cpus 4
+2018-08-17 07:44:36,8288 Daemonize is called
+[2018-08-17 07:44:36,8286 mapr-mfs passed parameter = 22018-08-17 07:44:36,8286 ifile /opt/mapr/conf/mfsinstances_1
+2018-08-17 07:44:36,8287 number of Cpus 4
+2018-08-17 07:44:36,8288 Daemonize is called
+2018-08-17 07:44:36,8301
+*** mfs mapr-version: $Id: mapr-version: 6.0.1.20180404222005.GA 1aeeb6d3c17c777fcba077a4cda0f230d564141a $ ***
+2018-08-17 07:44:36,8301 ******* Starting mfs server, with MAPR_HOME=/opt/mapr pid 4212 numInstances 1
+Command line: 2018-08-17 07:44:36,8301 Logging to file /opt/mapr//logs/mfs.log hostid: (null) hostname: (null)
+  OK  ]^M/opt/mapr/server/initaudit.sh: line 17: /opt/mapr/pid/initaudit.sh.pid: Permission denied

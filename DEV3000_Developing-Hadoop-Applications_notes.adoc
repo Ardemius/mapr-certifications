@@ -1,0 +1,925 @@
+= MapR Essentials DEV 3000 – Developing Hadoop Applications
+Thomas SCHWENDER <https://github.com/ardemius[@ardemius]>
+// Handling GitHub admonition blocks icons
+ifndef::env-github[:icons: font]
+ifdef::env-github[]
+:status:
+:outfilesuffix: .adoc
+:caution-caption: :fire:
+:important-caption: :exclamation:
+:note-caption: :paperclip:
+:tip-caption: :bulb:
+:warning-caption: :warning:
+endif::[]
+:imagesdir: images
+:source-highlighter: highlightjs
+// Next 2 ones are to handle line breaks in some particular elements (list, footnotes, etc.)
+:lb: pass:[<br> +]
+:sb: pass:[<br>]
+// check https://github.com/Ardemius/personal-wiki/wiki/AsciiDoctor-tips for tips on table of content in GitHub
+:toc: macro
+:toclevels: 4
+// To turn off figure caption labels and numbers
+//:figure-caption!:
+// Same for examples
+//:example-caption!:
+// To turn off ALL captions
+:caption:
+
+toc::[]
+
+Contains courses:
+
+* *DEV 300* – Build Hadoop MapReduce Applications
+* *DEV 301* – Manage and test Hadoop MapReduce Applications
+* *DEV 302* – Launch Jobs and Advanced Hadoop MapReduce
+
+All the *DEV 30X courses*, and *associated labs*, are aggregated the 2 following documents:
+
+* http://learn.mapr.com/dev-300-build-hadoop-mapreduce-applications/185041[DEV 3000 - Developing Hadoop Applications - Slide Guide]
+* http://learn.mapr.com/dev-300-build-hadoop-mapreduce-applications/185043[DEV 3000 - Developing Hadoop Applications - Lab Guide]
+
+== DEV 300 - Build Hadoop MapReduce Applications
+
+=== Install your Dev environment
+
+The best "easy way" to practise with MapR is to install its *sandbox*.
+
+Its prerequisite and install procedure are detailed here: https://mapr.com/docs/60/SandboxHadoop/c_sandbox_overview.html
+
+On my side, I chose the 6.0.1 sandbox on *VirtualBox*, hence all the upcoming configuration explanations will refer to this setup.
+
+The installation of the sandbox on VirtualBox is described here: https://mapr.com/docs/home/SandboxHadoop/t_install_sandbox_vbox.html +
+Once done, the *MCS* (MapR Control System) and *Hue* are available at those URLs:
+
+* *MCS*: https://localhost:8443
+* *Hue*: http://localhost:8888
+
+Here are the classic users used in the Guest OS:
+
+* usual configuration task: _mapr / mapr_
+* root account: _root / mapr_
+* "kind of root (???)": _maprdev / maprdev_
+* user for exercice: _user01 / mapr_
+
+[WARNING]
+====
+* Contrary to the default VM configuration, a least *8 Go of RAM* must be affected to the VM (and not 6 Go)
+	** Unfortunately, I also encountered strange "bugs" with this configuration, by example with the cluster files not present in `/mapr/demo.mapr.com/` +
+	I really can't understand from where it comes. +
+	What seems to work to avoid this (???), is to also affect *4 CPUs* instead of the default 2 for the VMs. +
+	-> As a reminder, *8 Go of RAM and 4 CPUs* seems to be the https://mapr.com/docs/60/SandboxHadoop/c_sandbox_overview.html[prerequisites by MapR for the sandbox], even if *NOT* the default configuration of the VMs.
+* Use the default "NAT" network configuration for your VM
+* To SSH the Guest OS (CentOS) of the VM on VirtualBox, you MUST use IP 127.0.0.1 (localhost) *AND PORT 2222* (*NOT* 22)
+====
+
+[TIP]
+====
+To switch the default QWERTY keyboard to AZERTY use the following command: `localectl set-keymap fr` +
+When asked, choose user `maprdev` with password `maprdev`.
+====
+
+=== Lesson 1 - Introduction to Developing Hadoop Applications
+
+==== 1.1 Describe a brief history of MapReduce
+
+image::DEV3000_01.png[width=800]
+
+==== 1.2 Discuss How MapReduce works at a High-level
+
+image::DEV3000_02.png[width=800]
+
+MapReduce model is based on sending compute to where data resides.
+
+We collect source data on the Hadoop cluster, either by bulk copying data in, or simply accumulating data in the cluster over time. +
+When we kick off a MapReduce job, Hadoop sends map and reduce tasks to appropriate servers in the cluster, and the framework manages all the details of data passing between nodes. +
+*Much of the compute happens on nodes with data on local disks*, which minimizes network traffic. +
+Once completed, we can read back the result from the cluster.
+
+.MapReduce Flow
+image::DEV3000_03.png[width=800]
+
+Let’s step through the *flow of a MapReduce job*. 
+We start off with our input, which could be one or many files.
+
+* [red]*INPUT*: The framework logically breaks up the input into *"splits"*. +
+Each split contains many records and records can be any type of information, like text, audio data, structured records, etc. +
+Each *split* typically corresponds to a *block of data on a node where the data resides*, but the programmer doesn’t need to be aware of this.
+* [red]*MAP*: *Each split is processed by a map task*. +
+Each record in a split is passed, independently of other records, to the `map()` method. +
+The `map()` method receives each record as a key-value pair, although in some cases it might only be interested in either the keys or the values. +
+The Mapper emits key-value pairs in response to the input record. It can emit zero records, or it can emit lot of records.
+* [red]*SHUFFLE*: *The map output is partitioned such that all records of a particular key go to the same reduce task*. +
+This phase involves a lot of copying and coordination between nodes in the cluster, but again, the programmer doesn’t need to worry about these details.
+* [red]*COMBINE*: If the reduce method is like addition, where summing subtotals of terms is equivalent to summing all individual terms, it’s more efficient to *split the reduce step and do some of it before shuffle*. +
+In this case, a combiner method is used, which is *often the same method as the reducer*. This cuts down the number of records that need to be copied from node to node.
+* [red]*REDUCE*:  Whether or not a combiner is invoked, the framework will send the intermediate results from the mappers to the reducers. +
+*The `reduce()` method receives a single key and a list of all values associated with that key*. +
+The reducer, based on your logic, will emit 0 or more key-value pairs which constitute the final results of this MapReduce job.
+Finally, the framework collects the reducer outputs so you can access the results. 
+
+Most of the parts here are handled by the framework. We only have to *provide the code* in the *map* and *reduce* columns. 
+
+[IMPORTANT]
+====
+Note that, at this level of detail, the *boxes don’t represent nodes in the cluster*. 
+
+We’re talking only about the *logical flow of data*. +
+The framework issues *map tasks and reduce tasks in parallel*. For example, several map tasks might run concurrently on a single node.
+====
+
+image::DEV3000_04.png[]
+
+I found some really good https://wikis.nyu.edu/display/NYUHPC/Big+Data+Tutorial+1%3A+MapReduce[tutorial on MapReduce] from the New York University. +
+Here is one of their schema to illustrate the *wordcount* example:
+
+image::DEV3000_26.png[]
+
+NOTE: Always from NYU, also have a look at their tutorials on https://wikis.nyu.edu/display/NYUHPC/Big+Data+Tutorial+2%3A+Hive[Hive] and https://wikis.nyu.edu/display/NYUHPC/Big+Data+Tutorial+3%3A+Introduction+to+Spark[Spark].
+
+===== Lab 1.2
+
+====== Run `wordcount`
+
+[NOTE]
+====
+A good introduction to *using Spark with the MapR sandbox* can be found in the tutorials of this last: +
+https://mapr.com/products/mapr-sandbox-hadoop/tutorials/spark-tutorial/
+
+It also re-explain the main basics about Spark programming, with *RDD* (Resilient Distributed Dataset), *SparkContext*, etc.
+====
+
+[WARNING]
+====
+With the sandbox 6.0.1, the associated hadoop version is the 2.7.0, and the path of the *hadoop mapreduce examples* is no more `/opt/mapr/hadoop/hadoop-0.20.2/` but `/opt/mapr/hadoop/hadoop-2.7.0/share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.0-mapr-1803.jar`
+====
+
+.Commands
+[source,bash]
+----
+# To be done with user "user01"
+# Input files have to be created IN THE HADOOP CLUSTER FILE SYSTEM (/mapr/<cluster>/user/<userID>/)
+# and NOT in the Guest OS user home directory (~ or /user/<userID>/)
+
+# with user "mapr"
+mkdir -p /mapr/demo.mapr.com/user/user01
+chown user01 /mapr/demo.mapr.com/user/user01
+
+# with user "user01"
+mkdir /mapr/demo.mapr.com/user/user01/Lab1.2
+
+# create the data file
+echo "Hello world! Hello" > /mapr/demo.mapr.com/user/user01/Lab1.2/in.txt
+
+# launch the mapreduce job
+hadoop2 jar /opt/mapr/hadoop/hadoop-2.7.0/share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.0-mapr-1803.jar \
+wordcount /user/user01/Lab1.2/in.txt /user/user01/Lab1.2/OUT
+
+# Display the result
+cat /mapr/demo.mapr.com/user/user01/Lab1.2/OUT/part-r-00000
+----
+
+====== Run `wordcount` against a set of text files
+
+.Commands
+[source,bash]
+----
+mkdir -p /mapr/demo.mapr.com/user/user01/Lab1.2/IN2
+
+cp /etc/*.conf /mapr/demo.mapr.com/user/user01/Lab1.2/IN2 2>/dev/null
+
+# To know how many files were copied
+ls /mapr/demo.mapr.com/user/user01/Lab1.2/IN2 | wc -l
+
+hadoop2 jar /opt/mapr/hadoop/hadoop-2.7.0/share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.0-mapr-1803.jar \
+wordcount /user/user01/Lab1.2/IN2 /user/user01/Lab1.2/OUT2
+
+# check the results
+wc -l /mapr/demo.mapr.com/user/user01/Lab1.2/OUT2/part-r-00000
+more /mapr/demo.mapr.com/user/user01/Lab1.2/OUT2/part-r-00000
+----
+
+====== Run `wordcount` against a binary file
+
+.Commands
+[source,bash]
+----
+mkdir -p /mapr/demo.mapr.com/user/user01/Lab1.2/IN3
+
+cp /bin/cp /mapr/demo.mapr.com/user/user01/Lab1.2/IN3/mybinary
+
+file /mapr/demo.mapr.com/user/user01/Lab1.2/IN3/mybinary
+
+strings /mapr/demo.mapr.com/user/user01/Lab1.2/IN3/mybinary | more
+
+hadoop2 jar /opt/mapr/hadoop/hadoop-2.7.0/share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.0-mapr-1803.jar \
+wordcount /user/user01/Lab1.2/IN3/mybinary /user/user01/Lab1.2/OUT3
+
+# check the results
+more /mapr/demo.mapr.com/user/user01/Lab1.2/OUT3/part-r-00000
+
+# Cross-reference the frequency of the “word” ATUH in the binary and in the wordcount output
+strings /mapr/demo.mapr.com/user/user01/Lab1.2/IN3/mybinary | grep -c ATUH 
+egrep -ac ATUH /mapr/demo.mapr.com/user/user01/Lab1.2/OUT3/part-r-00000
+----
+
+==== 1.3 Define how data flows in MapReduce
+
+* MapR-FS is a fully POSIX-compliant, read-write file-system with underlying mirroring/snapshotting capability and NFS support
+
+IMPORTANT: *Slides 21 to 27* of DEV 3000 slide guide are *EXTREMLY* important!
+
+[IMPORTANT]
+====
+The following explanation is only valid for MRv1, *NOT* MRv2 (which introduced YARN) !
+
+*JobTracker* and *TaskTracker* are 2 essential process involved in MapReduce execution in *MRv1* (or Hadoop version 1). +
+Both processes are now deprecated in *MRv2* (or Hadoop version 2) and *replaced* by *Resource Manager*, *Application Master* and *Node Manager* Daemons.
+====
+
+.Summary of Execution and Data Flow
+image::DEV3000_05.png[]
+
+1. Data is loaded from the Hadoop file system
+2. Next the job defines the input format of the data
+3. Data is then split between different map() methods running on all the nodes
+4. Record readers then parse out the data into key-value pairs that serve as input into the map() methods
+5. The map() method produces key-value pairs that are sent to the partitioner
+6. When there are multiple reducers, the mapper creates one partition for each reduce task
+7. The key-value pairs are then sorted by key in each partition
+8. The reduce() method takes the intermediate key-value pairs and reduces them to a final list of key-value pairs 
+9. The job defines the output format of the data
+10. And data is written back to the Hadoop file system
+
+* *InputFormat* class
+	** By default, the size of an input split is equal to the size of the block. +
+	In Hadoop, the default block size is 64M. In MapR, the equivalent structure is called “chunk” and has default size 256M.
+
+* *Mapper* class
++
+image::DEV3000_06.png[]
+	** The default *RecordReader* (for text input) defines the *key for the `map()` method as the byte offset of the record in the input file*, and the value is simply the line at the byte offset.
+	** The *map context* object collects the output from all the calls to the map method and then passes that data to the partitioner.
+
+* *Partitioner* class
+	** The *partitioner* takes the output generated by the `map()` method, hashes the record key, and creates partitions based on the hashed key. +
+	*Each partition is earmarked for a specific reducer*, so all the records with the same key will be written to the same partition (and therefore sent to the same reducer). +
+	This is the behavior of the default partitioner, you could override that and provide your own behavior.
+
+* *Shuffle* phase
+	** *Intermediate* (k, v) pairs (= completed intermediate partition) are exchanged by all nodes over the network (using HTTP or RPC protocol). +
+	This is the part of the MapReduce program that is the *most network intensive*.
+
+* *Reduce* class
++
+image:DEV3000_11.png[]
+	** The `reduce()` method is called for each key and the list of values associated with that key in the partition. The reduce() method processes each iterated value and writes the key and reduced list to the context.
+	** The OutputComitter in the context creates *one output file* per reducer that is run. +
+	The output of the reduce() method itself is captured in individual files (named `part-r-00000`,  `part-r-00001`), one for each reducer.
+
+* *Results from MapReduce Job*
+	** An empty file named `_SUCCESS` is created to indicate that the job completed successfully (though not necessarily without errors)
+	** The history of the job is captured in the `_logs/history*` files
+	** The output of the reduce() method itself is captured in individual files (named `part-r-00000`,  `part-r-00001`, ...), one for each reducer, or `part-m-00000` for map-only job.
+
+.HDFS flow
+NOTE: In addition, for a very good description of HDFS flows, have a look at link:resources/HDFS-flows.pdf[this cartoon].
+
+===== Lab 1.3
+
+WARNING: Contrary to what is written in the Lab guide, the URL for the Hadoop JobHistory server is `http://maprdemo:19888/`
+
+=== Lesson 2 - Job Execution Framework - MapReduce v1 and v2
+
+==== 2.1 Describe the MapReduce v1 job execution framework
+
+.MapReduce v1 Job Execution Framework
+image::DEV3000_12.png[]
+
+1. To begin, a user runs a MapReduce program on the client node which instantiates a `JobClient` object.  
+2. Next, the JobClient submits the job to the JobTracker. 
+3. Then the job tracker instantiates a `Job` object which gets sent to the appropriate task tracker.  
+4. The task tracker launches a child process which in turns runs the map or reduce task.  
+5. Finally the task continuously updates the task tracker with status and counters.
+
+===== Complementary explanations on the MRv1 execution flow
+
+image::DEV3000_07.png[]
+
+image::DEV3000_08.png[]
+
+===== Schedulers in Hadoop
+
+2 schedulers are available in Hadoop:
+
+* *Fair scheduler* (default): 
+	** Resources are *shared evenly* across pools
+	** each user has its own pool by default
+* *Capacity scheduler*:
+	** It gives all queues *access to cluster resources*. +
+	Shares are assigned to queues as *percentages of total cluster resources*.
+	** Each queue has configurable guaranteed capacity in slots.
+	** Jobs are placed in hierarchical queues. The default is 1 queue per cluster. +
+	Jobs within queue are FIFO
+
+The effective scheduler is defined in the `HADOOP_HOME/conf/mapred-site.xml` file.
+
+===== Limitations in the Hadoop v1 Execution Framework
+
+* *Scalability*: single job tracker restricts job throughput
+* *Availability*: single job tracker and namenode introduce SPOF
+* *Inflexibility*: map and reduce slots are *not* interchangeable
+* *Scheduler optimization*: framework doesn't optimize scheduling of jobs
+* *Program support*: framework is restricted to map and reduce programs
+
+==== 2.2 Compare MapReduce v1 to MapReduce v2 (YARN)
+
+* In MRv1, Map and Reduce job slot configuration is not dynamic. +
+This inflexibility leads to under-use or over-use of resources. +
+-> *There is no slot configuration in YARN*
+
+* In MRv1, only MapReduce jobs are supported. +
+-> *YARN supports MR and non-MR jobs*
+
+* In MRv1, the single Job Tracker has a upper limit of 4000 nodes. +
+-> *The YARN equivalent of Job Tracker supports multiple instances per cluster to scale*
+
+* Yarn uses the same API and CLI as MRv1, which is similar to Web UIs.
+
+.Differences between MRv1 and MRv2
+image:DEV3000_13.png[width=800]
+image:DEV3000_19.png[width=800]
+
+IMPORTANT: The main advancement in *YARN* architecture is the *separation of resource management and 
+job management*, which were both handled by the *same JobTracker process in Hadoop 1.x*.
+
+* *Cluster resources* and *job scheduling* are managed by the *Resource Manager*.
+* *Resource negotiation* and *job monitoring* are managed by an *Application Master* for each application running on the cluster
+
+.YARN architecture
+image::DEV3000_14.png[]
+
+.YARN main components
+[IMPORTANT]
+====
+* *RM* = *Resource Manager* : creates/deletes containers, tracks NMs +
+ResourceManager (RM) consists of *Scheduler*, *Applications Manager* (ASM).
++
+image::DEV3000_20.png[width=600]
+* *NM* = *Node Manager* : launches apps and AMs, reports status
+* *AM* = *Application Master* : requests containers for apps
+* *Container* = logica6 envelope for resources (CPU, memory)
+====
+
+.Applications Manager is NOT Application *Master*!
+[WARNING]
+====
+The terms *Application Master* and *Applications Manager* are often used interchangeably. +
+In reality, *Application Master* is the main container requesting, launching and monitoring application specific resources, whereas *Applications Manager* is a component inside ResourceManager.
+
+BE CAREFUL, several times, in the transcript or in schemes, the MapR course uses Applications Manager instead of Applications *Master*.
+
+Check this https://stackoverflow.com/questions/30967247/difference-between-application-manager-and-application-master-in-yarn[Stackoverflow question] for more details.
+====
+
+.YARN architecture (other schema)
+image::DEV3000_09.png[]
+
+==== 2.3 Describe how jobs execute in YARN (MRv2)
+
+===== MapReduce job lifecycle in YARN
+
+image::DEV3000_15.png[]
+
+1. User submits *app request* by *passing config for Application Master* to *Resource Manager*.
+2. Resource Manager allocates a container for Application Master on a node. +
+Tells Node Manager in charge of that node to launch the Application Master container.
+3. *Application Master* registers back with Resource Manager. *Asks for more containers* to run tasks.
+4. *Resource Manager allocates the containers* on different nodes in the cluster.
+5. Application Master talks directly to the Node Managers on those nodes to launch the containers for tasks.
+6. Application Master monitors the progress of the tasks.
+7. When all the application's tasks are done, *Application Master unregisters itself from Resource Manager*.
+8. Resource Manager claims back the previously allocated containers for the application.
+
+===== *NON*-MapReduce job lifecycle in YARN
+
+1. User submits app request by passing configuration for the AM to the RM
+2. RM starts AM and allocates container
+3. AM launches container and monitors it
+4. When AM is done, it unregisters from RM
+
+===== Describe how jobs execute in YARN
+
+IMPORTANT: ⚠️ This section is *EXTREMELY* important ⚠️
+
+image::DEV3000_17.png[]
+
+1. A client submits an application to the YARN Resource Manager, including the information required for the *Container Launch Context* (CLC)
+2. The *Applications Manager* (*in the Resource Manager*) negotiates a container and bootstraps the Application Master instance for the application
+3. The Application Master registers with the Resource Manager and requests containers
+4. The Application Master communicates with Node Managers to launch the containers it has been granted, specifying the CLC for each container
+5. The Application Master manages application execution. +
+During execution, the application (in the container) provides progress and status information to the Application Master. +
+The client can monitor the application's status by querying the Resource Manager or by communicating directly with the Application Master.
+6. The Application Master reports completion of the application to the Resource Manager.
+7. The Application Master un-registers with the Resource Manager, which then cleans up the Application Master container.
+
+====== Complementary explanations on the YARN execution flow
+
+image::DEV3000_10.png[]
+
+Another very good description of the YARN execution flow (check this https://www.slideshare.net/martyhall/hadoop-tutorial-mapreduce-part-6-job-execution-on-yarn[SlideShare presentation], slide 8 to 10):
+
+image::DEV3000_16.png[]
+
+1. Client submits MapReduce job by interacting with `Job` objects. +
+Client runs in it's own JVM
+2. Job's code interacts with Resource Manager to *acquire application meta-data*, such as *application ID*
+3. Job's code moves all the job related resources to HDFS, to make them available for the rest of the job
+4. Job's code submits the application to Resource Manager
+5. Resource Manager chooses a Node Manager with available resources, and requests a container for MRAppMaster (MapReduce Application Master)
+6. Node Manager allocates container for MRAppMaster. +
+This last will execute and coordinate MapReduce job
+7. MRAppMaster grabs required resource from HDFS, such as Input Splits. +
+These resources were copied there in step 3
+8. MRAppMaster negotiates with Resource Manager for available resources. +
+Resource Manager will select Node Manager that has the most resources
+9. MRAppMaster tells selected NodeManager to start Map and Reduce tasks
+10. Node Manager creates YarnChild containers that will coordinate and run tasks
+11. YarnChild acquires job resources from HDFS that will be required to execute Map and Reduce tasks.
+12. YarnChild executes Map and Reduce Tasks
+
+===== MapR Direct Shuffle in YARN
+
+[IMPORTANT]
+====
+The shuffle flow described here is *MapR specific*.
+
+The main point is the following: +
+`A mapper writes a file for each partition of its output (ie, for each reducer) in MapR's distributed file-system (*MapR-FS*). The reducer reads the map-outputs directly from the distr file system.`
+
+Up to now, no other distr file-system in the market is capable of so. +
+`In Apache Hadoop's, the mappers write to local disk(s), and *the reducers issue HTTP GET requests* to the task-tracker on the mapper nodes to fetch the map outputs.`
+
+Check https://www.quora.com/MapR-Technologies-How-Direct-Shuffle-actually-works[this article] for more details (careful! It's from 2013)
+====
+
+image::DEV3000_18.png[]
+
+1. The Application Master service initializes the application by calling initialize Application() on the LocalVolumeAuxiliaryService. +
+Next the Application Master service requests task containers from the Resource Manager.
+2. The Resource Manager sends information to the App Master, that this last uses to request containers from the Node Manager.
+3. The Node Manager, on each node, launches containers using information about the node’s local volume from the LocalVolumeAuxiliaryService.
+4. Data from map tasks is saved in the AppMaster for later use in TaskCompletion events which are requested by reduce tasks.
+5. As the map tasks completes, *map outputs and map-side spills are written to the local volumes on the map task nodes* (MapR-FS), generating *Task Completion events*.
+6. ReduceTasks fetch Task Completion events from the Application Manager (??? *TO BE CHECKED* ???, I think it is the Application Master instead). +
+The task Completion events include information on the location of map output data, enabling reduce tasks to copy data from MapOutput locations.
+7. Reduce tasks read the map output information (MapR-FS)
+8. Spills and interim merges are written to local volumes on the reduce task nodes (MapR-FS)
+9. The Application Master calls stopApplication() on the LocalVolumeAuxiliaryService to clean up data on the local volume.
+
+===== Lab 2.3 - run `DistributedShell`
+
+.Commands
+[source,bash]
+----
+# To be done with user "user01"
+yarn jar /opt/mapr/hadoop/hadoop-2.7.0/share/hadoop/yarn/hadoop-yarn-applications-distributedshell-2.7.0-mapr-1803.jar \
+-shell_command /bin/ls -shell_args /user/user01 \
+-jar /opt/mapr/hadoop/hadoop-2.7.0/share/hadoop/yarn/hadoop-yarn-applications-distributedshell-2.7.0-mapr-1803.jar
+
+# results
+[user01@maprdemo user01]$ yarn jar /opt/mapr/hadoop/hadoop-2.7.0/share/hadoop/yarn/hadoop-yarn-applications-distributedshell-2.7.0-mapr-1803.jar -shell_command /bin/ls -shell_args /user/user01 -jar /opt/mapr/hadoop/hadoop-2.7.0/share/hadoop/yarn/hadoop-yarn-applications-distributedshell-2.7.0-mapr-1803.jar
+18/08/16 10:33:41 INFO distributedshell.Client: Initializing Client
+18/08/16 10:33:41 INFO distributedshell.Client: Running Client
+18/08/16 10:33:42 INFO client.MapRZKBasedRMFailoverProxyProvider: Updated RM address to maprdemo/127.0.0.1:8032
+18/08/16 10:33:42 INFO distributedshell.Client: Got Cluster metric info from ASM, numNodeManagers=1
+18/08/16 10:33:42 INFO distributedshell.Client: Got Cluster node info from ASM
+18/08/16 10:33:42 INFO distributedshell.Client: Got node report from ASM for, nodeId=maprdemo:8099, nodeAddressmaprdemo:8042, nodeRackName/default-rack, nodeNumContainers0
+18/08/16 10:33:42 INFO distributedshell.Client: Queue info, queueName=root.default, queueCurrentCapacity=0.0, queueMaxCapacity=-1.0, queueApplicationCount=0, queueChildQueueCount=0
+18/08/16 10:33:42 INFO distributedshell.Client: User ACL Info for Queue, queueName=root, userAcl=SUBMIT_APPLICATIONS
+18/08/16 10:33:42 INFO distributedshell.Client: User ACL Info for Queue, queueName=root.default, userAcl=SUBMIT_APPLICATIONS
+18/08/16 10:33:42 INFO distributedshell.Client: User ACL Info for Queue, queueName=root.user01, userAcl=SUBMIT_APPLICATIONS
+18/08/16 10:33:42 INFO distributedshell.Client: Max mem capabililty of resources in this cluster 5122
+18/08/16 10:33:42 INFO distributedshell.Client: Max virtual cores capabililty of resources in this cluster 4
+18/08/16 10:33:42 INFO distributedshell.Client: Copy App Master jar from local filesystem and add to local environment
+18/08/16 10:33:42 INFO distributedshell.Client: Set the environment for the application master
+18/08/16 10:33:42 INFO distributedshell.Client: Setting up app master command
+18/08/16 10:33:42 INFO distributedshell.Client: Completed setting up app master command {{JAVA_HOME}}/bin/java -Xmx10m org.apache.hadoop.yarn.applications.distributedshell.ApplicationMaster --container_memory 10 --container_vcores 1 --num_containers 1 --priority 0 1><LOG_DIR>/AppMaster.stdout 2><LOG_DIR>/AppMaster.stderr
+18/08/16 10:33:42 INFO distributedshell.Client: Submitting application to ASM
+18/08/16 10:33:42 INFO security.ExternalTokenManagerFactory: Initialized external token manager class - com.mapr.hadoop.yarn.security.MapRTicketManager
+18/08/16 10:33:43 INFO impl.YarnClientImpl: Submitted application application_1534417448730_0004
+18/08/16 10:33:44 INFO distributedshell.Client: Got application report from ASM for, appId=4, clientToAMToken=null, appDiagnostics=, appMasterHost=N/A, appQueue=root.user01, appMasterRpcPort=-1, appStartTime=1534440822789, yarnAppState=ACCEPTED, distributedFinalState=UNDEFINED, appTrackingUrl=http://maprdemo:8088/proxy/application_1534417448730_0004/, appUser=user01
+18/08/16 10:33:45 INFO distributedshell.Client: Got application report from ASM for, appId=4, clientToAMToken=null, appDiagnostics=, appMasterHost=N/A, appQueue=root.user01, appMasterRpcPort=-1, appStartTime=1534440822789, yarnAppState=ACCEPTED, distributedFinalState=UNDEFINED, appTrackingUrl=http://maprdemo:8088/proxy/application_1534417448730_0004/, appUser=user01
+18/08/16 10:33:46 INFO distributedshell.Client: Got application report from ASM for, appId=4, clientToAMToken=null, appDiagnostics=, appMasterHost=N/A, appQueue=root.user01, appMasterRpcPort=-1, appStartTime=1534440822789, yarnAppState=ACCEPTED, distributedFinalState=UNDEFINED, appTrackingUrl=http://maprdemo:8088/proxy/application_1534417448730_0004/, appUser=user01
+18/08/16 10:33:47 INFO distributedshell.Client: Got application report from ASM for, appId=4, clientToAMToken=null, appDiagnostics=, appMasterHost=N/A, appQueue=root.user01, appMasterRpcPort=-1, appStartTime=1534440822789, yarnAppState=ACCEPTED, distributedFinalState=UNDEFINED, appTrackingUrl=http://maprdemo:8088/proxy/application_1534417448730_0004/, appUser=user01
+18/08/16 10:33:48 INFO distributedshell.Client: Got application report from ASM for, appId=4, clientToAMToken=null, appDiagnostics=, appMasterHost=maprdemo.local/127.0.0.1, appQueue=root.user01, appMasterRpcPort=-1, appStartTime=1534440822789, yarnAppState=RUNNING, distributedFinalState=UNDEFINED, appTrackingUrl=http://maprdemo:8088/proxy/application_1534417448730_0004/, appUser=user01
+18/08/16 10:33:49 INFO distributedshell.Client: Got application report from ASM for, appId=4, clientToAMToken=null, appDiagnostics=, appMasterHost=maprdemo.local/127.0.0.1, appQueue=root.user01, appMasterRpcPort=-1, appStartTime=1534440822789, yarnAppState=RUNNING, distributedFinalState=UNDEFINED, appTrackingUrl=http://maprdemo:8088/proxy/application_1534417448730_0004/, appUser=user01
+18/08/16 10:33:50 INFO distributedshell.Client: Got application report from ASM for, appId=4, clientToAMToken=null, appDiagnostics=, appMasterHost=maprdemo.local/127.0.0.1, appQueue=root.user01, appMasterRpcPort=-1, appStartTime=1534440822789, yarnAppState=RUNNING, distributedFinalState=UNDEFINED, appTrackingUrl=http://maprdemo:8088/proxy/application_1534417448730_0004/, appUser=user01
+18/08/16 10:33:51 INFO distributedshell.Client: Got application report from ASM for, appId=4, clientToAMToken=null, appDiagnostics=, appMasterHost=maprdemo.local/127.0.0.1, appQueue=root.user01, appMasterRpcPort=-1, appStartTime=1534440822789, yarnAppState=FINISHED, distributedFinalState=SUCCEEDED, appTrackingUrl=http://maprdemo:8088/proxy/application_1534417448730_0004/, appUser=user01
+18/08/16 10:33:51 INFO distributedshell.Client: Application has completed successfully. Breaking monitoring loop
+18/08/16 10:33:51 INFO distributedshell.Client: Application completed successfully
+
+# So here, the application ID is "application_1534417448730_0004" (application_<timestamp>_<appid>)
+
+cd /opt/mapr/hadoop/hadoop-2.7.0/logs/userlogs
+ls -al
+cd application_1534417448730_0004
+ls -al
+
+# results
+drwxr-s--- 2 user01 mapr 4096 Aug 16 10:33 container_e02_1534417448730_0004_01_000001
+drwxr-s--- 2 user01 mapr 4096 Aug 16 10:33 container_e02_1534417448730_0004_01_000002
+
+# we see that the job was executer on 2 containers, let's check them
+
+cd container_e02_1534417448730_0004_01_000002
+ls -al
+
+# results
+-rw-r----- 1 user01 mapr    0 Aug 16 10:33 stderr
+-rw-r----- 1 user01 mapr    0 Aug 16 10:33 stdout
+
+# unfortunately, both are empty, whereas stdout should have contained a listing of the /user/user01 directory ???
+# Issue found: the /user/user01 only contained dot files (hidden files), which are not listed by a plain old "ls" (you need ls -al)
+# CAREFUL! This /user/user01 must NOT be confused with /mapr/demo.mapr.com/user/user01 (MapR-FS) ! 
+
+# If we add a plain old "titi" file in /user/user01
+
+cd /user/user01/
+echo "Hello titi" > titi
+
+# when we relaunch the job, "titi" is effectively listed in stdout
+yarn jar /opt/mapr/hadoop/hadoop-2.7.0/share/hadoop/yarn/hadoop-yarn-applications-distributedshell-2.7.0-mapr-1803.jar \
+-shell_command /bin/ls -shell_args /user/user01/ \
+-jar /opt/mapr/hadoop/hadoop-2.7.0/share/hadoop/yarn/hadoop-yarn-applications-distributedshell-2.7.0-mapr-1803.jar
+
+cd /opt/mapr/hadoop/hadoop-2.7.0/logs/userlogs
+cd application_1534417448730_0007
+cd container_e02_1534417448730_0007_01_000002
+cat stdout
+
+# result
+titi
+----
+
+==== 2.4 Describe how to monitor jobs in YARN
+
+===== MRv1 and MRv2 on the same MapR cluster
+
+To control with version of MapReduce jobs use, you can:
+
+* for MRv1, run `hadoop1` or `hadoop -classic`
+* for MRv2, run `hadoop2`, `mapred`, `yarn` or even `hadoop` itself
+
+* for components using MapReduce under the hood, you can edit the `MAPR_MAPREDUCE_MODE` env var, in the right components configuration file:
+	** MRv1: `MAPR_MAPREDUCE_MODE=classic`
+	** MRv2: `MAPR_MAPREDUCE_MODE=yarn`
+
+* for MapR clients submitting jobs from outside the cluster, you can edit the `/opt/mapr/conf/hadoop_version` conf file:
+	** MRv1: `default_mode=classic`
+	** MRv2: `default_mode=yarn`
+
+* The default setting on the cluster can also be defined with the `maprcli` command, or within the *MCS* (MapR Control System)
+
+===== Differences between MRv1 and MRv2 job management
+
+image::DEV3000_21.png[width=800]
+
+* In MRv1, you can use the *Job Tracker* or *Task Tracker Web UIs* to monitor your jobs.
+* In YARN, there is a *history server* which runs a Web UI.
+
+===== Lab 2.4 - Examine Job Results
+
+1. Connect to the *History Server* at http://localhost:19888/
+2. After observation, it seems that *only MapReduce jobs can be seen in History server*. +
+This is confirmed by https://community.hortonworks.com/answers/82349/view.html[this article] from Hortonworks community:
++
+____
+Yarn typically stores history of all the application in either Mapreduce History server (*only for Mapreduce jobs*) or Application Timeline Server ( all type of yarn applications). +
+Kindly, verify that ATS (Application Timeline Server) is installed on your cluster. Look for below property in yarn-site.xml
+____
+After check, *no Application Timeline Server is installed on MapR sandbox*. +
+The following definition:
++
+
+[source,xml]
+----
+<property>
+  <name>yarn.timeline-service.enabled</name>
+  <value>true</value>
+</property>
+
+<property>
+<name>yarn.timeline-service.webapp.address</name>
+<value>host1:8188</value>
+</property>
+----
+Is *not* present in `/opt/mapr/hadoop/hadoop-2.7.0/etc/hadoop/yarn-site.xml`
+{lb}
+No job ran for the DistributedShell can be seen, but when rerunning a wordcount MR job: 
++
+
+[source,bash]
+----
+yarn jar /opt/mapr/hadoop/hadoop-2.7.0/share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.0-mapr-1803.jar \
+wordcount /user/user01/Lab1.2/IN2 /user/user01/MyLab/OUT
+----
+It can effectively be seen in the History Server.
+
+[NOTE]
+====
+The *configuration of the MapReduce History Server* can be found at: +
+`/opt/mapr/hadoop/hadoop-2.7.0/etc/hadoop/mapred-site.xml` +
+More details on https://stackoverflow.com/a/21847210/1809195[this Stackoverflow post].
+====
+
+=== Lesson 3 - Write a MapReduce Program
+
+==== 3.1 Summary of the programming problem
+
+*MapReduce Design Patterns*:
+
+* *Summarizing data*: statistical summaries, counts, indexes for groups of data
+* *Filtering data*: sample, sanitize, identify top "n", and filter unique data
+* *Organizing data*: transform, partition, sort and generate data
+* *Joining Data*: map-side and reduce-side joins
+
+*Some MapReduce programming tips*:
+
+* Start with a template for the driver, mapper, and reducer classes
+* Modify it to suit the needs of your application
+* Understand the flow and transformation of data (4 main transformations)
++
+image::DEV3000_22.png[width=600]
+	** First, how data is transformed from the input files and fed into the mappers
+	** Then how is  data transformed by the mappers 
+	** Next how data is sorted, merged, and presented to the reducer
+	** Last, how the reducers transform the data and write to output files
+* Identify appropriate types for keys and values. +
+You must ensure that your input and output types match up, or your MapReduce code will not work.
+
+==== 3.2 Design and implement the Mapper, Reducer and Driver classes
+
+Our simple problem: find the minimum value in the delta column and the year associated with that minimum. +
+All the other fields will be ignored.
+
+image::DEV3000_23.png[width=800]
+
+===== Mapper class
+
+====== Input of the Mapper class
+
+* Input format: `TextInputFormat`
+* Key: `LongWritable`
+* Value: `Text`
+
+image::DEV3000_24.png[width=600]
+
+.Reminder
+NOTE:  the *key from the default record* reader associated with `TextInputFormat` is the *byte offset into the file* (LongWritable)
+
+====== Output of the Mapper class
+
+`context.write(new Text("summary"), new Text(year + "_" + delta));`
+
+* 1st param is the *output key*
+* 2nd param is the *output value*
+
+Which gives the following lines of output:
+
+[source]
+----
+summary 1901_63
+summary 1902_77
+summary 1903_45
+summary 1904_-43
+...
+----
+
+NOTE: Since we hard-coded the *key to always be the string "summary"*, there will be only 
+*one partition* (and therefore only *one reducer*) when this mapreduce program is launched.
+
+====== Implement the Mapper class
+
+[source,java]
+----
+public class ReceiptsMapper extends Mapper <LongWritable, Text, Text, Text> {
+
+	public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+
+		StringTokenizer iterator = new StringTokenizer(value.toString(), "\\s+");
+		String year = iterator.nextToken();
+		iterator.nextToken();
+		iterator.nextToken();
+		String delta = iterator.nextToken();
+
+		context.write(new Text("summary"), year + "_" + delta);
+	}
+}
+----
+
+4 arguments to the *Mapper class*:
+
+1. input key type
+2. input value type
+3. output key type
+4. output value type
+
+*`map()` method* arguments:
+
+1. input key
+2. input value
+3. *context which encapsulates the Hadoop job running context*:
+	** configuration
+	** record reader
+	** record writer
+	** status reporter
+	** input split
+	** output commiter
+
+===== Reducer class
+
+====== Input of the Reducer class
+
+image::DEV3000_25.png[width=800]
+
+IMPORTANT: Recall that the *output of the Mapper must match the input to the Reducer* (both key and value types)
+
+* there is a distinction between what is output from a single `map()` call, and the whole set of intermediate results that come from all the calls to `map()`.
+	** the output of a *single `map()` call* is a *single key-value pair*
+	** The Hadoop infrastructure performs a *sort and merge operation* on all those key-value pairs to *produce a set of one or more partitions*.
+	**  When a call to *reduce* is made, it is made with *all the values for a given key*.
+
+====== Output of the Reducer class
+
+`min(2009): -1412688.0`
+
+* output key = `Text`
+	** min(year) -> `min(2009):`
+* output value = `FloatWritable`
+	** min(from `long` to `FloatWritable`)
+
+====== Implement the Reducer class
+
+[source,java]
+----
+public class ReceiptsReducer extends Reducer <Text, Text, Text, FloatWritable> {
+	
+	public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+	
+		long tempvalue = OL, min = Long.MAX_VALUE;
+		Text tempYear = null, tempValue = null, minYear = null, maxYear = null;
+		String compositeString;
+		String[] compositeStringArray;
+
+		for (Text value: values) {
+			compositeString = value.toString();
+			compositeStringArray = compositeString.split("_");
+			tempYear = new Text(compositeStringArray[0]);
+			tempValue = new Long(compositeStringArray[1]).longValue();
+
+			if (tempValue < min) {
+				min = tempValue;
+				minYear = tempYear;
+			}
+		}
+
+		Text keyText = new Text("min" + "(" + minYear.toString() + "): ");
+		context.write(keyText, new FloatWritable(min));
+	}
+}
+----
+
+4 arguments to the *Reducer class*: input key, output key, input value, output value
+
+*`reduce()` method* arguments:
+
+1. input key
+2. input value
+3. *context which encapsulates the Hadoop job running context*:
+	** configuration
+	** status reporter
+	** output committer
+	** etc.
+
+.Numbers of partitions and output files
+[NOTE]
+====
+Note that if the data set is partitioned into *more than one partition*, then we will have *multiple output files*, each with its "local" minimum calculated. +
+In that case, we would need to do further processing to calculate the global minimum over the whole data set. +
+It’s for this reason we hardcoded the key: *to guarantee we only have one partition and therefore one reducer*.
+====
+
+===== Driver class
+
+The *Driver* class executes on the client machine, and is responsible for configuring the job, then for submitting it for execution. +
+That's it which launch the MapReduce jobs.
+
+====== Implement the Driver class
+
+[source,java]
+----
+public class ReceiptsDriver extendsConfigured implements Tool {
+	
+	public int run(String[] args) throws Exception {
+
+		if (args.length != 2) {
+			System.err.printf("Usage: %s [generic options] <inputfile> <outputdir>\n", getClass().getSimpleName());
+			System.exit(1);
+		}
+
+		Job job = new Job(getConf(), "my receipts");
+		job.setJarByClass(ReceiptsDriver.class);
+		job.setMapperClass(ReceiptsMapper.class);
+		job.setReducerClass(ReceiptsReducer.class);
+
+		job.setInputFormatClass(TextInputFormat.class);
+		job.setOutputKeyClass(Text.class);
+		job.setOutputValueClass(FloatWritable.class);
+		job.setMapOutputValueClass(Text.class);
+
+		FileInputFormat.addInputPath(job, new Path(args[0]));
+		FileOutputFormat.setOutputPath(job, new Path(args[1]));
+
+		return job.waitForCompletion(true) ? 0 : 1;
+	}
+
+	public static void main(String[] args) throws Exception {
+
+		Configuration conf = new Configuration();
+		System.exit(ToolRunner.run(conf, new ReceiptsDriver(), args));
+	}
+}
+----
+
+The types for the job's output key and value must be the same as for the formerly defined reducer. +
+If mapper and reducer do NOT use the same *output* key and value types, the mapper type must be specified (`Text` class here).
+
+The job can be launched *synchronously* (with `job.waitForCompletion()`) or *asynchronously*.
+
+==== 3.3 Build and execute code
+
+[NOTE]
+====
+Contrary to what is explained in the slide guide, to configure the environment, you will have to update `~/.bash_profile`, and *NOT* `~/.profile`. +
+Check https://github.com/Linuxbrew/brew/issues/235[this article] for more information on the differences between those 2 files.
+====
+
+1. Configure the environment
+
++
+.bash_profile
+[source,bash]
+----
+export HADOOP_HOME=/opt/mapr/hadoop/hadoop-2.7.0
+export LD_LIBRARY_PATH=$HADOOP_HOME/lib/native
+export PATH=$HADOOP_HOME/bin:$PATH
+export CLASSPATH=$HADOOP_HOME/*:$HADOOP_HOME/lib/*
+export HADOOP_CLASSPATH=$CLASSPATH
+----
+2. Build the jar
+
++
+[source,bash]
+----
+mkdir classes
+
+javac -d classes ReceiptsMapper.java
+javac -d classes ReceiptsReducer.java
+
+jar -cvf Receipts.jar -C classes/ .
+
+javac -classpath $CLASSPATH:Receipts.jar -d classes ReceiptsDriver.java
+
+jar -uvf Receipts.jar -C classes/ .
+----
+3. Launch the Hadoop job
+
++
+[source,bash]
+----
+hadoop jar Receipts.jar Receipts.ReceiptsDriver \
+/user/user01/RECEIPTS/DATA/receipts.txt \
+/user/user01/RECEIPTS/OUT
+----
+4. Examine the output
+
++
+[source,bash]
+----
+hadoop fs -cat /user/user01/RECEIPTS/OUT/part-r-00000
+----
+
+.Be careful, MapR doc is old on this section
+[NOTE]
+====
+For `LD_LIBRARY_PATH` the correct path is now `$HADOOP_HOME/lib/native` +
+Have a look https://www.dezyre.com/questions/5336/library-warning-post-setup-of-hadoop[here] for an example.
+====
+
+== DEV 301 - Manage and Test Hadoop MapReduce Applications
+
+=== Lesson 4 - Use the MapReduce API
+
+
